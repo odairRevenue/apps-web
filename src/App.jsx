@@ -587,12 +587,10 @@ function BreakevenTab({ beParams, setBeParams, costosFijos, setCostosFijos, tota
   const peU = mcUnit > 0 ? cf / mcUnit : null;
   const peI = mcPct > 0 ? cf / mcPct : null;
 
-  // Desired margin — fully independent calculation
+  // Meta de rentabilidad — independiente del MC calculado/importado
+  // Fórmula: CF / % deseado → "¿cuánto tengo que vender para que X% de mis ventas cubra los CF?"
   const mgDeseado = +beParams.margenDeseado || 0;
-  const margenDisponible = mcPct - mgDeseado / 100;
-  const peIConRent = mgDeseado > 0 && margenDisponible > 0 ? cf / margenDisponible : null;
-  const margenImposible = mgDeseado > 0 && mcPct > 0 && margenDisponible <= 0;
-  const margenSinBase = mgDeseado > 0 && mcPct === 0;
+  const peIConRent = mgDeseado > 0 ? cf / (mgDeseado / 100) : null;
 
   // ── Fixed costs management ────────────────────────────────────────────────
   const addCosto = () => {
@@ -782,23 +780,12 @@ function BreakevenTab({ beParams, setBeParams, costosFijos, setCostosFijos, tota
               </div>
             </div>
 
-            {margenSinBase && (
-              <div className="margen-err">
-                ⚠️ Configura el precio de venta o importa el margen desde Sheets para calcular la meta.
-              </div>
-            )}
-            {margenImposible && (
-              <div className="margen-err">
-                ⛔ El {fmtPct(mgDeseado)} de rentabilidad deseada supera el margen de contribución disponible ({fmtPct(mcPct * 100)}).
-                Para alcanzar esa meta, necesitas reducir costos variables o aumentar el precio de venta.
-              </div>
-            )}
             {peIConRent && (
               <div className="stat mt8">
                 <div className="stat-l">Ventas requeridas para {fmtPct(mgDeseado)} de rentabilidad</div>
                 <div className="stat-v blu">{fmtCOP(peIConRent)}</div>
                 <div className="stat-s">
-                  CF {fmtCOP(cf)} ÷ (MC {fmtPct(mcPct * 100)} − Rentab. {fmtPct(mgDeseado)})
+                  {fmtCOP(cf)} ÷ {fmtPct(mgDeseado)} — para que el {fmtPct(mgDeseado)} de las ventas cubra todos los costos fijos
                 </div>
               </div>
             )}

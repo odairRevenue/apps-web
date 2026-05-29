@@ -647,7 +647,9 @@ function BreakevenTab({ beParams, setBeParams, costosFijos, setCostosFijos, tota
       if (isNaN(num)) { setGsStatus("⚠️ El valor de la celda no es un número válido"); setImporting(false); return; }
       if (!raw.includes("%") && num > 0 && num <= 1) num = num * 100; // 0.453 → 45.3%
 
-      setGSheetConfig(p => ({ ...p, importedMcPct: +num.toFixed(4) }));
+      const mcVal = +num.toFixed(4);
+      setGSheetConfig(p => ({ ...p, importedMcPct: mcVal }));
+      localStorage.setItem("sf_mc_importado", JSON.stringify(mcVal));
       setGsStatus(`✅ Margen importado correctamente: ${num.toFixed(2)}%`);
     } catch (e) {
       setGsStatus(`❌ ${e.message}`);
@@ -664,7 +666,16 @@ function BreakevenTab({ beParams, setBeParams, costosFijos, setCostosFijos, tota
 
   return (
     <div>
-      <div className="sec-title">⚖️ Punto de Equilibrio</div>
+      <div className="fb mb14" style={{ alignItems: "flex-start" }}>
+        <div className="sec-title" style={{ margin: 0 }}>⚖️ Punto de Equilibrio</div>
+        {gSheetConfig.importedMcPct != null && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(16,185,129,.08)", border: "1px solid rgba(16,185,129,.3)", borderRadius: 8, padding: "8px 14px" }}>
+            <span style={{ fontSize: 11, color: "var(--muted)" }}>MC desde Google Sheets</span>
+            <span style={{ fontFamily: "var(--mono)", fontWeight: 700, fontSize: 18, color: "var(--green)" }}>{fmtPct(+gSheetConfig.importedMcPct)}</span>
+            <span style={{ fontSize: 11, color: "var(--red)", cursor: "pointer" }} onClick={clearImported}>✕</span>
+          </div>
+        )}
+      </div>
       <div className="g2">
 
         {/* ── LEFT COLUMN ── */}
@@ -1209,10 +1220,19 @@ export default function App() {
   const [costosFijos, setCostosFijos] = useState(() => ls("sf_costos", []));
 
   // ── Google Sheets config (accessToken NOT persisted) ──────────────────────
-  const [gSheetConfig, setGSheetConfig] = useState(() => ({
-    accessToken: null, // never persist tokens
-    ...ls("sf_gsheet", { clientId: "", spreadsheetId: "", range: "Hoja1!A1", importedMcPct: null }),
-  }));
+  const [gSheetConfig, setGSheetConfig] = useState(() => {
+    const saved = ls("sf_gsheet", { clientId: "", spreadsheetId: "", range: "Hoja1!A1", importedMcPct: null });
+    // fallback: si importedMcPct se perdio, recuperar del key de respaldo
+    if (saved.importedMcPct == null) {
+      const backup = ls("sf_mc_importado", null);
+      if (backup != null) saved.importedMcPct = backup;
+    }
+    return { accessToken: null, ...saved };
+  });
+
+
+
+
 
   // ── Simulator state ───────────────────────────────────────────────────────
   const [simEmpId, setSimEmpId] = useState(() => ls("sf_simEmpId", ""));
